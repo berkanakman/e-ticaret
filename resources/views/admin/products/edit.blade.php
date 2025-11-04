@@ -60,7 +60,7 @@
             window.selectedAttributes = @json($selectedAttributes ?? []);
             window.variantsWithValues = @json($variantsWithValues ?? []);
             window.attributesMap = @json($attributesMap ?? []);
-            
+
             // Debug için
             console.log('Debug bilgileri:');
             console.log('attributeOptions:', window.attributeOptions);

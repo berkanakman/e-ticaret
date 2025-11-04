@@ -156,7 +156,7 @@ class ProductController extends Controller
         // Ürünün özellik değerlerini getir
         $productValues = [];
         $attributeValues = \DB::table('product_attribute_values')->where('product_id', $product->id)->get();
-        
+
         // Eğer ürün değerleri boşsa, varsayılan değerler ekle
         if ($attributeValues->isEmpty()) {
             // İlk özelliği ve seçeneğini al
@@ -172,14 +172,14 @@ class ProductController extends Controller
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);
-                    
+
                     // Değişkenlere ekle
                     $productValues[$firstAttribute->id] = [(int)$firstOption->id];
                     $attributeValues = \DB::table('product_attribute_values')->where('product_id', $product->id)->get();
                 }
             }
         }
-        
+
         foreach ($attributeValues as $val) {
             $productValues[$val->attribute_id][] = (int)$val->option_id;
         }
@@ -431,23 +431,23 @@ class ProductController extends Controller
             $variant->delete();
         }
     }
-    
+
     protected function syncProductImages(Product $product, Request $request)
     {
         // Eğer resim yüklenmişse işle
         if ($request->hasFile('images')) {
             $images = $request->file('images');
-            
+
             foreach ($images as $image) {
                 // Resim doğrulama
                 if (!$image->isValid()) continue;
-                
+
                 // Resim adını oluştur
                 $fileName = 'product_' . $product->id . '_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                
+
                 // Resmi kaydet
                 $path = $image->storeAs('products', $fileName, 'public');
-                
+
                 // Resim kaydını oluştur
                 $product->images()->create([
                     'path' => $path,
@@ -456,7 +456,7 @@ class ProductController extends Controller
                 ]);
             }
         }
-        
+
         // Silinecek resimleri işle
         $deleteImages = $request->input('delete_images', []);
         if (!empty($deleteImages)) {
