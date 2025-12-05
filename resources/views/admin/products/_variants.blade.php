@@ -22,7 +22,7 @@
                     ];
                 }
             }
-            $variantsForJs[] = ['id'=>$v->id ?? null,'sku'=>$v->sku ?? null,'options'=>$opts];
+            $variantsForJs[] = ['id'=>$v->id ?? null,'sku'=>$v->sku ?? null, 'price' => $v->price ?? 0, 'stock' => $v->stock ?? 0, 'options'=>$opts];
         }
     }
 @endphp
@@ -45,18 +45,7 @@
         <hr>
         <h6 class="mb-2">Mevcut Varyantlar</h6>
         <div id="variants-list">
-            @foreach($product->variants ?? [] as $v)
-                <div class="card mb-2 variant-row" data-variant-id="{{ $v->id }}">
-                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                        <div class="small text-muted">SKU: {{ $v->sku }}</div>
-                        <div>
-                            @foreach($v->options ?? [] as $po)
-                                <span class="badge bg-secondary me-1">{{ $po->attribute->name ?? '' }}: {{ $po->option->name ?? '' }}</span>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endforeach
+            {{-- Variants will be rendered here by JavaScript --}}
         </div>
     </div>
 </div>

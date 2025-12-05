@@ -8,23 +8,85 @@ export default function initVariants() {
     function renderVariantToDOM(v) {
         const list = document.getElementById('variants-list');
         if (!list) return;
-        const div = document.createElement('div');
-        div.className = 'card mb-2 variant-row';
-        div.dataset.variantId = v.id ?? ('new-' + Math.random().toString(36).slice(2,8));
-        const inner = document.createElement('div');
-        inner.className = 'card-body p-2 d-flex justify-content-between align-items-center';
-        inner.innerHTML = `<div class="small text-muted">SKU: ${v.sku ?? ''}</div><div></div>`;
-        const badges = inner.querySelector('div:last-child');
+
+        const variantId = v.id ?? ('new-' + Math.random().toString(36).slice(2,8));
+
+        const card = document.createElement('div');
+        card.className = 'card mb-2 variant-row';
+        card.dataset.variantId = variantId;
+
+        const cardBody = document.createElement('div');
+        cardBody.className = 'card-body p-2';
+
+        const row = document.createElement('div');
+        row.className = 'row align-items-center';
+
+        // Variant options
+        const optionsCol = document.createElement('div');
+        optionsCol.className = 'col-md-5';
         (v.options || []).forEach(o => {
             const span = document.createElement('span');
             span.className = 'badge bg-secondary me-1';
             const attrName = o.attribute_name ?? (allAttrs[String(o.attribute_id)]?.name ?? '');
             const optName = o.option_name ?? (allAttrs[String(o.attribute_id)]?.options?.find(x=>x.id===o.option_id)?.name ?? '');
             span.textContent = `${attrName}: ${optName}`;
-            badges.appendChild(span);
+            optionsCol.appendChild(span);
         });
-        div.appendChild(inner);
-        list.appendChild(div);
+
+        // SKU
+        const skuCol = document.createElement('div');
+        skuCol.className = 'col-md-2';
+        const skuInput = document.createElement('input');
+        skuInput.type = 'text';
+        skuInput.name = `variants[${variantId}][sku]`;
+        skuInput.className = 'form-control form-control-sm';
+        skuInput.value = v.sku ?? '';
+        skuInput.placeholder = 'SKU';
+        skuCol.appendChild(skuInput);
+
+        // Price
+        const priceCol = document.createElement('div');
+        priceCol.className = 'col-md-2';
+        const priceInput = document.createElement('input');
+        priceInput.type = 'number';
+        priceInput.name = `variants[${variantId}][price]`;
+        priceInput.className = 'form-control form-control-sm';
+        priceInput.value = v.price ?? '';
+        priceInput.placeholder = 'Fiyat';
+        priceInput.step = '0.01';
+        priceCol.appendChild(priceInput);
+
+        // Stock
+        const stockCol = document.createElement('div');
+        stockCol.className = 'col-md-2';
+        const stockInput = document.createElement('input');
+        stockInput.type = 'number';
+        stockInput.name = `variants[${variantId}][stock]`;
+        stockInput.className = 'form-control form-control-sm';
+        stockInput.value = v.stock ?? '';
+        stockInput.placeholder = 'Stok';
+        stockCol.appendChild(stockInput);
+
+        // Delete button
+        const deleteCol = document.createElement('div');
+        deleteCol.className = 'col-md-1 text-end';
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn btn-danger btn-sm';
+        deleteButton.innerHTML = '&times;';
+        deleteButton.addEventListener('click', () => {
+            card.remove();
+        });
+        deleteCol.appendChild(deleteButton);
+
+        row.appendChild(optionsCol);
+        row.appendChild(skuCol);
+        row.appendChild(priceCol);
+        row.appendChild(stockCol);
+        row.appendChild(deleteCol);
+        cardBody.appendChild(row);
+        card.appendChild(cardBody);
+        list.appendChild(card);
     }
 
     (existingVariants || []).forEach(v => renderVariantToDOM(v));

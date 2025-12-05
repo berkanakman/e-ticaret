@@ -53,6 +53,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Ürünler
         Route::resource('products', ProductController::class);
+        Route::post('products/upload-image', [ProductController::class, 'uploadImage'])->name('products.uploadImage');
+        Route::delete('products/delete-image/{image}', [ProductController::class, 'deleteImage'])->name('products.deleteImage');
         Route::resource('attributes', ProductAttributeController::class);
         Route::post('attributes/{attribute}/options/ajax', [ProductAttributeController::class,'ajaxAddOption'])->name('attributes.options.ajax');
         Route::post('attributes/{attribute}/options/reorder', [ProductAttributeController::class,'reorderOptions'])->name('attributes.options.reorder');

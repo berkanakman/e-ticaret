@@ -16,6 +16,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Models\ProductAttributeOption;
 use App\Models\ProductVariant;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use App\Models\ProductImage;
 
 class ProductController extends Controller
 {
@@ -87,9 +90,6 @@ class ProductController extends Controller
                 if (method_exists($this, 'syncProductVariants')) {
                     $this->syncProductVariants($product, $request);
                 }
-                if (method_exists($this, 'syncProductImages')) {
-                    $this->syncProductImages($product, $request);
-                }
 
                 return redirect()->route('admin.products.index')->with('success', 'Ürün oluşturuldu');
             } catch (QueryException $ex) {
@@ -107,9 +107,6 @@ class ProductController extends Controller
                             }
                             if (method_exists($this, 'syncProductVariants')) {
                                 $this->syncProductVariants($product, $request);
-                            }
-                            if (method_exists($this, 'syncProductImages')) {
-                                $this->syncProductImages($product, $request);
                             }
                             return redirect()->route('admin.products.index')->with('success', 'Ürün oluşturuldu');
                         } catch (QueryException $ex2) {
@@ -186,6 +183,7 @@ class ProductController extends Controller
 
         $selectedAttributes = array_keys($productValues);
         $attributesMap = $attributes->pluck('name','id')->toArray();
+        $product->load('images');
 
         return view('admin.products.edit', [
             'product' => $product,
@@ -248,9 +246,6 @@ class ProductController extends Controller
                 if (method_exists($this, 'syncProductVariants')) {
                     $this->syncProductVariants($product, $request);
                 }
-                if (method_exists($this, 'syncProductImages')) {
-                    $this->syncProductImages($product, $request);
-                }
 
                 return redirect()->route('admin.products.index')->with('success', 'Ürün güncellendi');
             } catch (QueryException $ex) {
@@ -268,9 +263,6 @@ class ProductController extends Controller
                             }
                             if (method_exists($this, 'syncProductVariants')) {
                                 $this->syncProductVariants($product, $request);
-                            }
-                            if (method_exists($this, 'syncProductImages')) {
-                                $this->syncProductImages($product, $request);
                             }
                             return redirect()->route('admin.products.index')->with('success', 'Ürün güncellendi');
                         } catch (QueryException $ex2) {
@@ -432,36 +424,37 @@ class ProductController extends Controller
         }
     }
 
-    protected function syncProductImages(Product $product, Request $request)
+    public function uploadImage(Request $request)
     {
-        // Eğer resim yüklenmişse işle
-        if ($request->hasFile('images')) {
-            $images = $request->file('images');
+        $request->validate([
+            'image' => 'required',
+            'product_id' => 'required|exists:products,id',
+        ]);
 
-            foreach ($images as $image) {
-                // Resim doğrulama
-                if (!$image->isValid()) continue;
+        $product = Product::findOrFail($request->product_id);
 
-                // Resim adını oluştur
-                $fileName = 'product_' . $product->id . '_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+        $imageData = $request->image;
+        list($type, $imageData) = explode(';', $imageData);
+        list(, $imageData)      = explode(',', $imageData);
+        $imageData = base64_decode($imageData);
 
-                // Resmi kaydet
-                $path = $image->storeAs('products', $fileName, 'public');
+        $imageName = 'product_' . $product->id . '_' . time() . '_' . uniqid() . '.png';
+        $path = 'products/' . $imageName;
 
-                // Resim kaydını oluştur
-                $product->images()->create([
-                    'path' => $path,
-                    'name' => $fileName,
-                    'sort_order' => 0
-                ]);
-            }
-        }
+        Storage::disk('public')->put($path, $imageData);
 
-        // Silinecek resimleri işle
-        $deleteImages = $request->input('delete_images', []);
-        if (!empty($deleteImages)) {
-            $product->images()->whereIn('id', $deleteImages)->delete();
-        }
+        $productImage = $product->images()->create([
+            'path' => $path,
+            'name' => $imageName,
+        ]);
+
+        return response()->json(['success' => true, 'image' => $productImage]);
+    }
+
+    public function deleteImage(ProductImage $image)
+    {
+        $image->delete();
+        return response()->json(['success' => true]);
     }
 
     public function storeManual(Request $request, Product $product)

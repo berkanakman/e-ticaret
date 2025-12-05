@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'category_id','name','slug','description','price','is_active','stock','sku'
@@ -55,5 +56,10 @@ class Product extends Model
             'product_id',               // Product ID
             'attribute_id'              // Attribute ID
         )->withPivot('value'); // Eğer pivot tablosunda değer saklıyorsanız
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class);
     }
 }

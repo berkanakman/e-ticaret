@@ -18,6 +18,9 @@
     {{-- Özel CSS (varsa) --}}
     <link rel="stylesheet" href="{{ asset('css/admin-custom.css') }}">
 
+    {{-- Croppie CSS --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css" />
+
     @stack('head')
 </head>
 <body class="d-flex flex-column min-vh-100 admin-body">
@@ -46,6 +49,9 @@
 
 {{-- Ortak admin scripti --}}
 <script src="{{ asset('js/admin/panel.js') }}"></script>
+
+{{-- Croppie JS --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js"></script>
 
 @stack('scripts')
 </body>
