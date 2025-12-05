@@ -4,6 +4,7 @@
 @section('content')
     <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" id="product-create-form">
         @csrf
+        @include('admin.products._general')
         @include('admin.products._form')
 
         <div class="text-end">
@@ -13,6 +14,6 @@
     </form>
 @endsection
 
-@section('scripts')
+@push('scripts')
     <script src="{{ asset('js/admin/product_features_variants.js') }}"></script>
-@endsection
+@endpush

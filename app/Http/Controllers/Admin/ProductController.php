@@ -189,6 +189,7 @@ class ProductController extends Controller
 
         return view('admin.products.edit', [
             'product' => $product,
+            'categories' => Category::orderBy('name')->get(),
             'attributes' => $attributes,
             'attributeOptions' => $attributeOptions,
             'productValues' => $productValues,
@@ -405,8 +406,12 @@ class ProductController extends Controller
 
             // Varyant değerlerini sırala ve kombinasyon anahtarı oluştur
             $values = $variantData['values'];
-            ksort($values);
-            $combinationKey = json_encode($values);
+            $normalizedValues = [];
+            foreach ($values as $k => $v) {
+                $normalizedValues[(int)$k] = (int)$v;
+            }
+            ksort($normalizedValues);
+            $combinationKey = json_encode($normalizedValues);
 
             // Varyant verilerini hazırla
             $variantAttributes = [

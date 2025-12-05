@@ -4,9 +4,9 @@
     foreach ($allAttributes as $a) {
         $opts = [];
         foreach ($a->options ?? [] as $o) {
-            $opts[] = ['id'=>$o->id,'name'=>$o->name,'value'=>$o->value,'attribute_id'=>$a->id];
+            $opts[] = ['id' => $o->id, 'name' => $o->name, 'value' => $o->value, 'attribute_id' => $a->id];
         }
-        $allForJs[$a->id] = ['id'=>$a->id,'name'=>$a->name,'type'=>$a->type,'options'=>$opts];
+        $allForJs[$a->id] = ['id' => $a->id, 'name' => $a->name, 'type' => $a->type, 'options' => $opts];
     }
     $variantsForJs = $variantsForJs ?? [];
     if (!empty($product) && isset($product->variants) && is_iterable($product->variants)) {
@@ -22,7 +22,13 @@
                     ];
                 }
             }
-            $variantsForJs[] = ['id'=>$v->id ?? null,'sku'=>$v->sku ?? null,'options'=>$opts];
+            $variantsForJs[] = [
+                'id' => $v->id ?? null,
+                'sku' => $v->sku ?? null,
+                'price' => $v->price ?? null,
+                'stock' => $v->stock ?? null,
+                'options' => $opts
+            ];
         }
     }
 @endphp
@@ -32,7 +38,8 @@
         <h5 class="mb-3">Varyantlar</h5>
 
         <div class="mb-3">
-            <div class="form-text small text-muted">Özellikleri sayfanın üstündeki "Kullanılacak Özellikler" bölümünden seçin. Aşağıda seçilen özelliklere ait seçenekler checkbox olarak görülecek.</div>
+            <div class="form-text small text-muted">Özellikleri sayfanın üstündeki "Kullanılacak Özellikler" bölümünden
+                seçin. Aşağıda seçilen özelliklere ait seçenekler checkbox olarak görülecektir.</div>
         </div>
 
         <div id="selected-attributes-list" class="mb-3"></div>
@@ -45,18 +52,7 @@
         <hr>
         <h6 class="mb-2">Mevcut Varyantlar</h6>
         <div id="variants-list">
-            @foreach($product->variants ?? [] as $v)
-                <div class="card mb-2 variant-row" data-variant-id="{{ $v->id }}">
-                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                        <div class="small text-muted">SKU: {{ $v->sku }}</div>
-                        <div>
-                            @foreach($v->options ?? [] as $po)
-                                <span class="badge bg-secondary me-1">{{ $po->attribute->name ?? '' }}: {{ $po->option->name ?? '' }}</span>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endforeach
+            {{-- Variants will be rendered here by JS --}}
         </div>
     </div>
 </div>
