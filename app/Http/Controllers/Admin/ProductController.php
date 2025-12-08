@@ -16,6 +16,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Models\ProductAttributeOption;
 use App\Models\ProductVariant;
+use App\Models\ProductImage;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -541,6 +543,57 @@ class ProductController extends Controller
         }
 
         return response()->json(['created' => $created, 'count' => count($created)]);
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required',
+            'product_id' => 'required|integer|exists:products,id'
+        ]);
+
+        $product = Product::findOrFail($request->product_id);
+
+        $imageData = $request->input('image');
+        list($type, $imageData) = explode(';', $imageData);
+        list(, $imageData) = explode(',', $imageData);
+        $imageData = base64_decode($imageData);
+
+        $imageName = 'product_' . $product->id . '_' . time() . '_' . uniqid() . '.png';
+        $path = 'products/' . $imageName;
+
+        Storage::disk('public')->put($path, $imageData);
+
+        $productImage = $product->images()->create([
+            'image_path' => $path,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resim başarıyla yüklendi.',
+            'image' => [
+                'id' => $productImage->id,
+                'path' => Storage::url($productImage->image_path)
+            ]
+        ]);
+    }
+
+    public function deleteImage($imageId)
+    {
+        try {
+            $image = ProductImage::findOrFail($imageId);
+
+            if (Storage::disk('public')->exists($image->image_path)) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+
+            $image->delete();
+
+            return response()->json(['success' => true, 'message' => 'Resim başarıyla silindi.']);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Resim silinirken bir hata oluştu.'], 500);
+        }
     }
 
 // helper cartesian implementation...

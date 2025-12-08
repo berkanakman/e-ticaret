@@ -52,6 +52,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('categories.children.reorder');
 
         // Ürünler
+        Route::post('products/upload-image', [ProductController::class, 'uploadImage'])->name('products.uploadImage');
+        Route::delete('products/delete-image/{imageId}', [ProductController::class, 'deleteImage'])->name('products.deleteImage');
         Route::resource('products', ProductController::class);
         Route::resource('attributes', ProductAttributeController::class);
         Route::post('attributes/{attribute}/options/ajax', [ProductAttributeController::class,'ajaxAddOption'])->name('attributes.options.ajax');

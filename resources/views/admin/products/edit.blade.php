@@ -69,6 +69,126 @@
             console.log('variantsWithValues:', window.variantsWithValues);
         </script>
         <script src="{{ asset('js/admin/product_features_variants.js') }}"></script>
+        <script>
+            $(document).ready(function() {
+                var croppie = null;
+                var cropModal = new bootstrap.Modal(document.getElementById('cropImageModal'));
+                var imageUploadInput = $('#image-upload-input');
+                var imageCropContainer = $('#image-crop-container');
+                var cropAndUploadBtn = $('#crop-and-upload-btn');
+                var uploadedImagesContainer = $('#uploaded-images-container');
+                var productId = '{{ $product->id }}';
+
+                function initializeCroppie(imageUrl) {
+                    if (croppie) {
+                        croppie.destroy();
+                    }
+                    croppie = new Croppie(imageCropContainer[0], {
+                        viewport: { width: 400, height: 400, type: 'square' },
+                        boundary: { width: '100%', height: 380 },
+                        enableExif: true
+                    });
+                    croppie.bind({
+                        url: imageUrl
+                    });
+                }
+
+                imageUploadInput.on('change', function() {
+                    if (this.files && this.files[0]) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            initializeCroppie(e.target.result);
+                            cropModal.show();
+                        };
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+
+                cropAndUploadBtn.on('click', function(e) {
+                    croppie.result({
+                        type: 'canvas',
+                        size: { width: 800, height: 800 },
+                        format: 'png',
+                        quality: 0.95
+                    }).then(function(base64Image) {
+                        cropModal.hide();
+                        // Show loading indicator
+                        cropAndUploadBtn.prop('disabled', true).text('Yükleniyor...');
+
+                        $.ajax({
+                            url: '{{ route("admin.products.uploadImage") }}',
+                            type: 'POST',
+                            data: {
+                                "_token": "{{ csrf_token() }}",
+                                "image": base64Image,
+                                "product_id": productId
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    var newImageHtml = `
+                                        <div class="uploaded-image-card" data-image-id="${response.image.id}">
+                                            <img src="${response.image.path}" alt="Ürün Resmi" class="img-thumbnail">
+                                            <button type="button" class="btn btn-danger btn-sm delete-image-btn">&times;</button>
+                                        </div>
+                                    `;
+                                    uploadedImagesContainer.append(newImageHtml);
+                                } else {
+                                    alert(response.message || 'Bir hata oluştu.');
+                                }
+                            },
+                            error: function() {
+                                alert('Resim yüklenirken bir sunucu hatası oluştu.');
+                            },
+                            complete: function() {
+                                // Reset button state
+                                cropAndUploadBtn.prop('disabled', false).text('Kırp ve Yükle');
+                                imageUploadInput.val(''); // Reset file input
+                            }
+                        });
+                    });
+                });
+
+                // Delete image
+                uploadedImagesContainer.on('click', '.delete-image-btn', function() {
+                    if (!confirm('Bu resmi silmek istediğinizden emin misiniz?')) {
+                        return;
+                    }
+                    var card = $(this).closest('.uploaded-image-card');
+                    var imageId = card.data('image-id');
+                    var deleteButton = $(this);
+
+                    deleteButton.prop('disabled', true);
+
+                    $.ajax({
+                        url: `/admin/products/delete-image/${imageId}`,
+                        type: 'DELETE',
+                        data: {
+                            "_token": "{{ csrf_token() }}"
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                card.fadeOut(300, function() { $(this).remove(); });
+                            } else {
+                                alert(response.message || 'Resim silinirken bir hata oluştu.');
+                                deleteButton.prop('disabled', false);
+                            }
+                        },
+                        error: function(xhr) {
+                            alert('Sunucu hatası: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Bilinmeyen bir hata oluştu.'));
+                            deleteButton.prop('disabled', false);
+                        }
+                    });
+                });
+
+                // Clear croppie instance when modal is hidden
+                $('#cropImageModal').on('hidden.bs.modal', function () {
+                    if (croppie) {
+                        croppie.destroy();
+                        croppie = null;
+                    }
+                });
+            });
+        </script>
     @endpush
 @endsection
 
