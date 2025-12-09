@@ -43,6 +43,11 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class, 'product_id', 'id');
     }
 
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class);
+    }
+
     /**
      * Product ile Attribute ilişkisinin tanımı
      * ProductAttributeValue üzerinden ProductAttribute ile ilişki

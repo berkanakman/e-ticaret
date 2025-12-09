@@ -13,58 +13,75 @@ class ProductVariantController extends Controller
 {
     /**
      * Otomatik varyant oluşturma
+     * Receives selected options from the frontend and generates combinations.
      */
-    public function generateMissing(Product $product)
+    public function generateMissing(Request $request, Product $product)
     {
-        $attributes = $product->attributes()->with('options')->get();
+        $selectedOptions = $request->validate([
+            'options' => 'required|array',
+            'options.*' => 'array',
+            'options.*.*' => 'integer|exists:product_attribute_options,id'
+        ]);
 
-        if ($attributes->isEmpty()) {
-            return response()->json(['message' => 'Hiç özellik seçilmemiş.'], 422);
+        $optionGroups = array_values($selectedOptions['options']);
+
+        if (empty($optionGroups)) {
+            return response()->json([], 200); // Return empty if no options selected
         }
 
-        // Seçeneklerin kombinasyonlarını oluştur
-        $options = [];
-        foreach ($attributes as $attr) {
-            $ids = $attr->options->pluck('id')->toArray();
-            if (!empty($ids)) {
-                $options[] = $ids;
-            }
-        }
-
-        if (empty($options)) {
-            return response()->json(['message' => 'Seçenek bulunamadı.'], 422);
-        }
-
-        $combinations = $this->cartesian($options);
+        $combinations = $this->cartesian($optionGroups);
+        $createdVariants = [];
 
         foreach ($combinations as $combination) {
-            $existing = ProductVariant::where('product_id', $product->id)
-                ->whereHas('options', function ($q) use ($combination) {
-                    $q->whereIn('option_id', $combination);
-                })->exists();
+            if (!is_array($combination)) {
+                $combination = [$combination];
+            }
+            sort($combination);
+            $uniqueCombination = array_unique($combination);
 
-            if (!$existing) {
-                $variant = ProductVariant::create([
-                    'product_id' => $product->id,
-                    'sku' => uniqid('VAR-'),
-                    'price' => $product->price,
+            // Check if a variant with the exact same options already exists
+            $existingVariant = $product->variants()
+                ->whereHas('options', function ($query) use ($uniqueCombination) {
+                    $query->whereIn('option_id', $uniqueCombination);
+                }, '=', count($uniqueCombination))
+                ->first();
+
+            if (!$existingVariant) {
+                $variant = $product->variants()->create([
+                    'sku' => 'AUTO-' . uniqid(),
+                    'price' => $product->price ?? 0,
                     'stock' => 0,
                 ]);
 
-                foreach ($combination as $optId) {
-                    $opt = ProductAttributeOption::find($optId);
+                $optionsForVariant = [];
+                foreach ($uniqueCombination as $optId) {
+                    $opt = ProductAttributeOption::with('attribute')->find($optId);
                     if ($opt) {
-                        ProductVariantOption::create([
-                            'variant_id' => $variant->id,
+                        $variant->options()->create([
                             'attribute_id' => $opt->attribute_id,
                             'option_id' => $opt->id,
                         ]);
+                        // Prepare data for the JSON response
+                        $optionsForVariant[] = [
+                            'attribute_id' => $opt->attribute_id,
+                            'option_id' => $opt->id,
+                            'attribute_name' => $opt->attribute->name,
+                            'option_name' => $opt->name,
+                        ];
                     }
                 }
+                // Add the newly created variant with its details to the list to be returned
+                $createdVariants[] = [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'price' => $variant->price,
+                    'stock' => $variant->stock,
+                    'options' => $optionsForVariant,
+                ];
             }
         }
-
-        return response()->json(['message' => 'Varyantlar başarıyla oluşturuldu.']);
+        // Return the array of newly created variants
+        return response()->json($createdVariants);
     }
 
     /**
